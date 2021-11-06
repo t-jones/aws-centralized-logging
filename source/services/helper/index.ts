@@ -12,8 +12,6 @@
  */
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "./lib/common/logger";
-import { Metrics } from "./lib/common/metrics";
-import moment from "moment";
 import { CloudWatchLogs, EC2, IAM } from "aws-sdk";
 
 interface IEvent {
@@ -74,7 +72,7 @@ exports.handler = async (event: IEvent, context: any) => {
           label: "helper/CreateESServiceRole",
           message: `es service linked role created`,
         });
-      } catch (e) {
+      } catch (e: any) {
         logger.error({
           label: "helper/createServiceLinkedRole",
           message: `${JSON.stringify(e)}`,
@@ -102,7 +100,7 @@ exports.handler = async (event: IEvent, context: any) => {
     let allRegions: any;
     try {
       allRegions = await getRegions();
-    } catch (e) {
+    } catch (e: any) {
       logger.error({
         label: "helper/CWDestination",
         message: `${e.message}`,
@@ -156,41 +154,7 @@ exports.handler = async (event: IEvent, context: any) => {
         }
       );
     }
-  } else if (event.ResourceType === "Custom::LaunchData") {
-    // send metric for launch
-    if (process.env.SEND_METRIC === "Yes") {
-      logger.info({
-        label: "helper/LaunchData",
-        message: `sending launch data`,
-      });
-      let eventType = "";
-      if (event.RequestType === "Create") {
-        eventType = "SolutionLaunched";
-      } else if (event.RequestType === "Delete") {
-        eventType = "SolutionDeleted";
-      }
-
-      const metric = {
-        Solution: properties.SolutionId,
-        UUID: properties.SolutionUuid,
-        TimeStamp: moment.utc().format("YYYY-MM-DD HH:mm:ss.S"),
-        Data: {
-          Event: eventType,
-          Stack: properties.Stack,
-          Version: properties.SolutionVersion,
-        },
-      };
-      await Metrics.sendAnonymousMetric(
-        <string>process.env.METRICS_ENDPOINT,
-        metric
-      );
-
-      responseData = {
-        Data: metric,
-      };
-    }
-  }
-
+  } 
   // send response to custom resource
   return await sendResponse(event, context.logStreamName, status, responseData);
 };
@@ -358,7 +322,7 @@ async function deleteDestination(destinationName: string, regions: string[]) {
       message: `All cw logs destinations deleted`,
     });
     return "cw logs destinations deleted";
-  } catch (e) {
+  } catch (e: any) {
     logger.warn({
       label: "helper/deleteDestinations",
       message: e.message,
@@ -386,7 +350,7 @@ async function areRegionsValid(regions: string[], awsRegions: string[]) {
       })
     );
     return true;
-  } catch (e) {
+  } catch (e: any) {
     logger.error({
       label: "helper/areRegionsValid",
       message: `${e.message}`,

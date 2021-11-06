@@ -1,0 +1,31 @@
+{
+  "name": "provider-framework",
+  "version": "0.0.1",
+  "description": "Framework for creating cfn custom resources in lambda",
+  "main": "lib/framework.js",
+  "scripts": {
+    "pretest": "npm i",
+    "test": "echo \"nothing to do\"",
+    "build:clean": "rm -rf ./node_modules && rm -rf ./dist && rm -f ./package-lock.json",
+    "build:copy": "cp -r ./node_modules ./dist/node_modules",
+    "build:ts": "./node_modules/typescript/bin/tsc --project ./tsconfig.json",
+    "build:install": "npm i",
+    "watch": "tsc -w",
+    "build:zip": "cd ./dist && zip -rq cl-cfn-provider.zip .",
+    "build:all": "npm run build:clean && npm run build:install && npm run build:ts && npm prune --production && npm run build:copy && npm run build:zip"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "aws-sdk": "^2.848.0",
+    "https": "^1.0.0",
+    "path": "^0.12.7",
+    "url": "^0.11.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.2",
+    "@types/uuid": "^8.0.0",
+    "@types/aws-lambda": "^8.10.84",
+    "@types/node": "^16.11.1"
+  }
+}

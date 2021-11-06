@@ -60,7 +60,7 @@ export class WinstonSNS extends Transport {
         })
         .promise();
       return "sns message published successfully";
-    } catch (e) {
+    } catch (e: any) {
       throw new Error(e.message);
     }
   };

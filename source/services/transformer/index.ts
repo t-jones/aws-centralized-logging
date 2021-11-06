@@ -15,8 +15,6 @@ import zlib from "zlib";
 import { Firehose } from "aws-sdk";
 import { Record } from "aws-sdk/clients/firehose";
 import { logger } from "./lib/common/logger";
-import { Metrics } from "./lib/common/metrics";
-import moment from "moment";
 /**
  * @description interface for log event
  * @property {string} id for the log event
@@ -201,38 +199,6 @@ async function putRecords(records: Record[]) {
   };
   const firehose = new Firehose();
   await firehose.putRecordBatch(params).promise();
-
-  // send usage metric to aws-solutions
-  if (process.env.SEND_METRIC === "Yes") {
-    logger.info({
-      label: "putRecords",
-      message: `sending metrics for indexed data`,
-    });
-
-    let totalItemSize = 0;
-    records.forEach((r) => {
-      totalItemSize += (r.Data as Buffer).byteLength;
-    });
-    logger.debug({
-      label: "putRecords/sendMetric",
-      message: `totalItemSize: ${totalItemSize}`,
-    });
-
-    const metric = {
-      Solution: process.env.SOLUTION_ID,
-      UUID: process.env.UUID,
-      TimeStamp: moment.utc().format("YYYY-MM-DD HH:mm:ss.S"),
-      Data: {
-        TotalItemSize: totalItemSize,
-        Version: process.env.SOLUTION_VERSION,
-        Region: process.env.AWS_REGION,
-      },
-    };
-    await Metrics.sendAnonymousMetric(
-      <string>process.env.METRICS_ENDPOINT,
-      metric
-    );
-  }
 }
 
 exports.handler = async (event: IEvent) => {

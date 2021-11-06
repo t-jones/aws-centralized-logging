@@ -139,10 +139,22 @@ export class CLPrimary extends Stack {
      */
     const clusterSize: CfnParameter = new CfnParameter(this, "ClusterSize", {
       description:
-        "Elasticsearch cluster size; small (4 data nodes), medium (6 data nodes), large (6 data nodes)",
+        "Elasticsearch cluster size; tiny (3 data nodes), small (4 data nodes), medium (6 data nodes), large (6 data nodes)",
       type: "String",
-      default: "Small",
-      allowedValues: ["Small", "Medium", "Large"],
+      default: "Tiny",
+      allowedValues: ["Tiny", "Small", "Medium", "Large"],
+    });
+
+    /**
+     * @vpc List of regions for CW Logs Destination
+     * @type {CfnParameter}
+     */
+    const existingVpc: CfnParameter = new CfnParameter(this, "ExistingVpc", {
+      description:
+        "Would you like to use an existing VPC or create a new one?",
+      type: "String",
+      default: "New",
+      allowedValues: ["New", "Existing"]
     });
 
     /**
@@ -283,6 +295,7 @@ export class CLPrimary extends Stack {
     const esMap = new CfnMapping(this, "ESMap", {
       mapping: {
         NodeCount: {
+          Tiny: 3,
           Small: 4,
           Medium: 6,
           Large: 6,
@@ -293,6 +306,7 @@ export class CLPrimary extends Stack {
           Large: "c5.large.elasticsearch",
         },
         InstanceSize: {
+          Tiny: "r5.large.elasticsearch",
           Small: "r5.large.elasticsearch",
           Medium: "r5.2xlarge.elasticsearch",
           Large: "r5.4xlarge.elasticsearch",
@@ -301,7 +315,7 @@ export class CLPrimary extends Stack {
     });
 
     //=============================================================================================
-    // Condition
+    // Conditions
     //=============================================================================================
     const demoDeploymentCheck = new CfnCondition(this, "demoDeploymentCheck", {
       expression: Fn.conditionEquals(demoTemplate.valueAsString, "Yes"),
@@ -313,6 +327,10 @@ export class CLPrimary extends Stack {
         expression: Fn.conditionEquals(jumpboxDeploy.valueAsString, "Yes"),
       }
     );
+
+    const newVpcCheck = new CfnCondition(this, "newVpcCheck", {
+      expression: Fn.conditionEquals(existingVpc.valueAsString, "New"),
+    });
 
     //=============================================================================================
     // Resource
@@ -414,9 +432,9 @@ export class CLPrimary extends Stack {
     const helperProvider: Provider = new Provider(this, "HelperProvider", {
       onEventHandler: helperFunc,
     });
-    (helperProvider.node.children[0].node.findChild(
-      "Resource"
-    ) as CfnFunction).cfnOptions.metadata = {
+    (
+      helperProvider.node.children[0].node.findChild("Resource") as CfnFunction
+    ).cfnOptions.metadata = {
       cfn_nag: {
         rules_to_suppress: [
           {
@@ -664,6 +682,7 @@ export class CLPrimary extends Stack {
         },
       };
     });
+    (VPC.node.defaultChild as CfnResource).cfnOptions.condition = newVpcCheck;
 
     /**
      * @description security group for es domain
